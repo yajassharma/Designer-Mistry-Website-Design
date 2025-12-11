@@ -1,203 +1,249 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { ArrowRight, Hammer, Users, ShoppingCart, Droplets, Zap, Sparkles, Paintbrush, Armchair, HardHat, BrickWall, Ruler } from 'lucide-react';
-import { useAIImage } from './useAIImage';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowUpRight, Hammer, Users, ShoppingCart, Droplets, Zap, Sparkles, Paintbrush, Armchair } from 'lucide-react';
+import gsap from 'gsap';
 
 const services = [
   { 
     id: 'construction', 
     name: "Turnkey Construction", 
+    category: "Execution",
     icon: Hammer, 
-    desc: "From ground-breaking to handover, we execute complete civil structures with precision BOQ tracking.",
-    prompt: "Construction site wide angle, raw concrete structure, cranes, blue sky, cinematic",
-    colSpan: "md:col-span-2",
-    rowSpan: "md:row-span-2"
+    desc: "End-to-end execution of civil structures. From excavation to handover with precision BOQ tracking.",
+    image: "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?q=80&w=1600&auto=format&fit=crop",
+    quote: "We don't just pour concrete; we engineer certainty."
   },
   { 
     id: 'design', 
     name: "Interior Design", 
+    category: "Visuals",
     icon: Armchair, 
-    desc: "Immersive 3D visualization and execution.",
-    prompt: "Luxury modern living room interior, bright sunlight, minimal furniture, photorealistic",
-    colSpan: "md:col-span-1",
-    rowSpan: "md:row-span-2"
+    desc: "Immersive 3D visualization. Walk through your home in VR before a single brick is laid.",
+    image: "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?q=80&w=1200&auto=format&fit=crop",
+    quote: "Design is not just what it looks like. Design is how it works."
   },
   { 
     id: 'material', 
     name: "Material Store", 
+    category: "Procurement",
     icon: ShoppingCart, 
-    desc: "Direct-from-factory pricing on verified supplies.",
-    prompt: "Organized warehouse of construction materials, bricks, cement, industrial aesthetic",
-    colSpan: "md:col-span-1",
-    rowSpan: "md:row-span-1"
+    desc: "Direct-from-factory pricing. Steel, cement, and aggregates sourced at wholesale rates.",
+    image: "https://as1.ftcdn.net/jpg/04/97/72/22/1000_F_497722214_I482E0qYiqm9mNtrhQDfcpgz1tb59GI7.jpg",
+    quote: "Quality is the best business plan."
   },
   { 
     id: 'manpower', 
-    name: "Manpower", 
+    name: "Manpower Hub", 
+    category: "Workforce",
     icon: Users, 
-    desc: "Verified skilled labor marketplace.",
-    prompt: "Construction workers team portrait, safety gear, professional, bright",
-    colSpan: "md:col-span-1",
-    rowSpan: "md:row-span-1"
+    desc: "Verified skilled labor. Masons, carpenters, and electricians vetted for skill and safety.",
+    image: "https://images.unsplash.com/photo-1577199001468-44c049e7603f?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8bGFib3Vyc3xlbnwwfHwwfHx8MA%3D%3D$0",
+    quote: "Great things in business are never done by one person."
   },
   { 
     id: 'plumbing', 
-    name: "Plumbing", 
+    name: "Advanced Plumbing", 
+    category: "MEP",
     icon: Droplets, 
-    desc: "Expert piping & fixtures.",
-    prompt: "Modern bathroom plumbing fixtures close up, chrome, water drops, clean",
-    colSpan: "md:col-span-1",
-    rowSpan: "md:row-span-1"
+    desc: "Hydro-tested piping solutions. Leak-proof systems with pressure-optimized layouts.",
+    image: "https://images.unsplash.com/photo-1607472586893-edb57bdc0e39?q=80&w=1200&auto=format&fit=crop",
+    quote: "Water is the driving force of all nature."
   },
   { 
     id: 'electrical', 
-    name: "Electrical", 
+    name: "Electrical Automation", 
+    category: "MEP",
     icon: Zap, 
-    desc: "Safe, certified wiring.",
-    prompt: "Electrical circuit board close up, glowing lights, technology abstract",
-    colSpan: "md:col-span-1",
-    rowSpan: "md:row-span-1"
+    desc: "Future-proof wiring and smart home integration with zero-trip safety standards.",
+    image: "https://images.unsplash.com/photo-1555664424-778a1e5e1b48?q=80&w=1200&auto=format&fit=crop",
+    quote: "Lighting is the jewelry of the home."
   },
   { 
     id: 'painting', 
-    name: "Painting", 
+    name: "Premium Finishes", 
+    category: "Finishing",
     icon: Paintbrush, 
-    desc: "Premium finishes.",
-    prompt: "Wall painting texture, bright colors, artistic stroke, macro",
-    colSpan: "md:col-span-1",
-    rowSpan: "md:row-span-1"
+    desc: "Mechanized painting and texture work. Laser-leveled surface preparation.",
+    image: "https://images.unsplash.com/photo-1562259949-e8e7689d7828?q=80&w=1200&auto=format&fit=crop",
+    quote: "Color is a power which directly influences the soul."
   },
   { 
     id: 'cleaning', 
     name: "Deep Cleaning", 
+    category: "Handover",
     icon: Sparkles, 
-    desc: "Move-in ready.",
-    prompt: "Sparkling clean empty room, bright windows, sunshine, white floor",
-    colSpan: "md:col-span-1",
-    rowSpan: "md:row-span-1"
+    desc: "Industrial post-construction cleaning. Move into a pristine, ready-to-live home.",
+    image: "https://happyhousekeepers.com.ph/wp-content/uploads/2023/12/OUR-SERVICES-POST-CONSTRUCTION-CLEANING.jpg",
+    quote: "Simplicity is the ultimate sophistication."
   }
 ];
 
-const ServiceCard = ({ service, index }: { service: any, index: number }) => {
-  const { imageUrl } = useAIImage(service.prompt, true);
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: index * 0.1 }}
-      viewport={{ once: true }}
-      className={`group relative overflow-hidden rounded-3xl bg-slate-100 ${service.colSpan} ${service.rowSpan} min-h-[300px] border border-slate-200 hover:shadow-2xl transition-all duration-500`}
-    >
-      {/* Background Image with Reveal Effect */}
-      <div className="absolute inset-0 z-0">
-        {imageUrl ? (
-          <img 
-            src={imageUrl} 
-            alt={service.name} 
-            className="w-full h-full object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-700 scale-100 group-hover:scale-110" 
-          />
-        ) : (
-          <div className="w-full h-full bg-slate-200" />
-        )}
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/80 to-white group-hover:via-black/20 group-hover:to-black/80 transition-colors duration-500" />
-      </div>
-
-      {/* Content */}
-      <div className="absolute inset-0 z-10 flex flex-col justify-between p-8">
-        <div className="flex justify-between items-start">
-          <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm group-hover:bg-orange-500 group-hover:text-white transition-colors duration-300">
-            <service.icon className="w-6 h-6" />
-          </div>
-          <Link 
-            to={`/services/${service.id}`}
-            className="w-10 h-10 rounded-full border border-slate-300 flex items-center justify-center opacity-0 -translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 bg-white/20 backdrop-blur text-white hover:bg-white hover:text-black"
-          >
-            <ArrowRight className="w-4 h-4" />
-          </Link>
-        </div>
-
-        <div>
-          <h3 className="text-2xl font-serif font-bold text-slate-900 group-hover:text-white transition-colors duration-300 mb-2">
-            {service.name}
-          </h3>
-          <p className="text-slate-600 group-hover:text-white/80 transition-colors duration-300 text-sm leading-relaxed max-w-[90%]">
-            {service.desc}
-          </p>
-        </div>
-      </div>
-    </motion.div>
-  );
-};
-
 export const ServicesPage = () => {
+  const [activeService, setActiveService] = useState<number | null>(null);
+  const cursorRef = useRef<HTMLDivElement>(null);
+  const cursorLabelRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Custom Cursor Logic
+  useEffect(() => {
+    const moveCursor = (e: MouseEvent) => {
+      // Only move custom cursor if hovering over list items
+      if (activeService !== null && cursorRef.current) {
+         gsap.to(cursorRef.current, {
+            x: e.clientX,
+            y: e.clientY,
+            duration: 0.5,
+            ease: "power3.out"
+         });
+         gsap.to(cursorLabelRef.current, {
+            x: e.clientX,
+            y: e.clientY,
+            duration: 0.45,
+            ease: "power3.out"
+         });
+      }
+    };
+    window.addEventListener('mousemove', moveCursor);
+    return () => window.removeEventListener('mousemove', moveCursor);
+  }, [activeService]);
+
   return (
-    <div className="pt-32 bg-white min-h-screen">
-       {/* Header Section */}
-       <div className="max-w-[1400px] mx-auto px-6 mb-20">
-          <motion.div 
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="text-center max-w-4xl mx-auto"
-          >
-             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-100 text-orange-600 text-xs font-bold uppercase tracking-widest mb-6">
-                <HardHat className="w-3 h-3" /> Comprehensive Solutions
-             </div>
-             <h1 className="text-5xl md:text-7xl font-serif text-slate-900 mb-8 leading-tight">
-               Mastering Every <br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-amber-500">Dimension</span> of Build.
-             </h1>
-             <p className="text-xl text-slate-600 leading-relaxed">
-               Designer Mistri isn't just an app—it's a complete ecosystem. We integrate the fragmented construction supply chain into a single, intelligent workflow.
-             </p>
-          </motion.div>
-       </div>
-
-       {/* Bento Grid */}
-       <div className="max-w-[1400px] mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-6 mb-32">
-          {services.map((service, index) => (
-            <ServiceCard key={service.id} service={service} index={index} />
-          ))}
-       </div>
-
-       {/* Stats Strip */}
-       <div className="bg-slate-900 py-20 overflow-hidden relative">
-          <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
-             <div className="absolute right-0 top-0 w-[500px] h-[500px] bg-orange-500 rounded-full blur-[150px]" />
-             <div className="absolute left-0 bottom-0 w-[300px] h-[300px] bg-blue-500 rounded-full blur-[150px]" />
-          </div>
+    <div ref={containerRef} className="pt-32 min-h-screen relative cursor-default">
+      
+      {/* Background with Fade-in Grid & Transparent Top */}
+      <div className="absolute inset-0 z-0 pointer-events-none">
+          {/* Top Gradient: Transparent (shows LiquidEther) -> Solid Slate-50 */}
+          <div className="absolute top-0 left-0 right-0 h-[500px] bg-gradient-to-b from-transparent via-slate-50/80 to-slate-50" />
           
-          <div className="max-w-[1400px] mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-12 relative z-10 text-center">
-             {[
-               { label: "Projects Delivered", value: "500+" },
-               { label: "Active Sites", value: "42" },
-               { label: "Vendor Partners", value: "150+" },
-               { label: "Quality Checks", value: "470" }
-             ].map((stat, i) => (
-               <div key={i}>
-                 <div className="text-4xl md:text-5xl font-serif text-white mb-2">{stat.value}</div>
-                 <div className="text-orange-500 text-xs font-bold uppercase tracking-widest">{stat.label}</div>
-               </div>
-             ))}
-          </div>
+          {/* Solid Background for the rest */}
+          <div className="absolute top-[500px] left-0 right-0 bottom-0 bg-slate-50" />
+
+          {/* Fading Grid Pattern */}
+          <div 
+             className="absolute inset-0 opacity-[0.4]" 
+             style={{ 
+                 backgroundImage: 'linear-gradient(#cbd5e1 1px, transparent 1px), linear-gradient(90deg, #cbd5e1 1px, transparent 1px)', 
+                 backgroundSize: '40px 40px',
+                 maskImage: 'linear-gradient(to bottom, transparent 10%, black 100%)',
+                 WebkitMaskImage: 'linear-gradient(to bottom, transparent 10%, black 100%)'
+             }} 
+          />
+      </div>
+
+      {/* Floating Image Cursor (Visible only when hovering) */}
+      <div 
+        ref={cursorRef} 
+        className="fixed top-0 left-0 w-[450px] h-[320px] rounded-2xl overflow-hidden pointer-events-none z-50 hidden md:block opacity-0 shadow-2xl shadow-black/30"
+        style={{ transform: 'translate(-50%, -50%) scale(0)' }}
+      >
+        <AnimatePresence mode="wait">
+            {activeService !== null && (
+                <motion.div 
+                    key={activeService}
+                    initial={{ opacity: 0, scale: 1.1 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="w-full h-full relative"
+                >
+                    <img 
+                        src={services[activeService].image}
+                        className="w-full h-full object-cover"
+                        alt="Service Preview"
+                    />
+                    {/* Dark Gradient Overlay for Text Readability */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
+                    
+                    {/* Quote Overlay */}
+                    <div className="absolute bottom-0 left-0 right-0 p-8">
+                        <div className="w-8 h-1 bg-orange-500 mb-3" />
+                        <p className="text-white font-serif text-xl italic leading-relaxed">
+                            "{services[activeService].quote}"
+                        </p>
+                    </div>
+                </motion.div>
+            )}
+        </AnimatePresence>
+      </div>
+
+       {/* Floating Label Cursor */}
+       <div 
+          ref={cursorLabelRef}
+          className="fixed top-0 left-0 pointer-events-none z-[51] hidden md:flex items-center justify-center mix-blend-difference opacity-0"
+          style={{ transform: 'translate(-50%, -50%)' }}
+       >
+           <div className="w-4 h-4 bg-white rounded-full" />
        </div>
 
-       {/* Bottom CTA */}
-       <div className="py-32 text-center bg-slate-50">
-          <div className="max-w-2xl mx-auto px-6">
-            <h2 className="text-4xl font-serif text-slate-900 mb-6">Ready to start your journey?</h2>
-            <p className="text-slate-600 mb-8">Get a precise BOQ and start your project with zero friction.</p>
-            <div className="flex justify-center gap-4">
-               <Link to="/contact" className="px-8 py-4 bg-orange-500 text-white rounded-full font-bold hover:bg-orange-600 transition-all shadow-lg shadow-orange-500/30">
-                 Start a Project
-               </Link>
-               <Link to="/pricing" className="px-8 py-4 bg-white text-slate-900 border border-slate-200 rounded-full font-bold hover:bg-slate-50 transition-all">
-                 View Pricing
-               </Link>
-            </div>
-          </div>
-       </div>
+      <div className="max-w-[1600px] mx-auto px-6 mb-20 relative z-10">
+         <div className="mb-12 pt-10">
+             <h1 className="text-[12vw] md:text-[8vw] leading-[0.8] font-serif text-slate-900 tracking-tighter mb-8">
+                Our <span className="text-orange-600 italic">8 Pillars</span>
+             </h1>
+             <div className="flex flex-col md:flex-row justify-between items-start md:items-end border-b border-slate-900 pb-8">
+                <p className="text-xl md:text-2xl text-slate-600 max-w-xl leading-relaxed">
+                    A suite of precision-engineered services designed to bring predictability to the chaotic world of construction.
+                </p>
+             </div>
+         </div>
+
+         {/* The Interactive List */}
+         <div className="flex flex-col">
+            {services.map((service, index) => (
+                <Link 
+                    to={`/services/${service.id}`} 
+                    key={service.id}
+                    className="group relative border-b border-slate-200 py-12 hover:bg-white/80 transition-colors duration-500"
+                    onMouseEnter={() => {
+                        setActiveService(index);
+                        if (cursorRef.current && cursorLabelRef.current) {
+                            gsap.to(cursorRef.current, { opacity: 1, scale: 1, duration: 0.3 });
+                            gsap.to(cursorLabelRef.current, { opacity: 1, duration: 0.3 });
+                        }
+                    }}
+                    onMouseLeave={() => {
+                        setActiveService(null);
+                        if (cursorRef.current && cursorLabelRef.current) {
+                            gsap.to(cursorRef.current, { opacity: 0, scale: 0, duration: 0.3 });
+                            gsap.to(cursorLabelRef.current, { opacity: 0, duration: 0.3 });
+                        }
+                    }}
+                >
+                    <div className="flex flex-col md:flex-row md:items-center justify-between relative z-10 px-4 md:px-8">
+                        {/* Index & Category */}
+                        <div className="mb-4 md:mb-0 md:w-1/4">
+                            <span className="text-xs font-mono text-slate-400 mr-4">0{index + 1}</span>
+                            <span className="text-xs font-bold uppercase tracking-widest text-orange-600 px-2 py-1 bg-orange-50 rounded-full border border-orange-100">
+                                {service.category}
+                            </span>
+                        </div>
+
+                        {/* Title */}
+                        <div className="md:w-1/2">
+                            <h2 className="text-4xl md:text-6xl font-serif text-slate-900 group-hover:translate-x-4 transition-transform duration-500 flex items-center gap-4">
+                                {service.name}
+                                {/* Mobile Image Reveal */}
+                                <div className="md:hidden w-12 h-12 rounded-full overflow-hidden border border-slate-200">
+                                    <img src={service.image} className="w-full h-full object-cover" alt="" />
+                                </div>
+                            </h2>
+                        </div>
+
+                        {/* Arrow & Desc */}
+                        <div className="mt-4 md:mt-0 md:w-1/4 flex items-center justify-between md:justify-end gap-8">
+                             <p className="text-sm text-slate-500 max-w-[200px] hidden lg:block opacity-0 group-hover:opacity-100 transition-opacity duration-500 transform translate-y-2 group-hover:translate-y-0">
+                                {service.desc}
+                             </p>
+                             <div className="w-12 h-12 rounded-full border border-slate-300 flex items-center justify-center group-hover:bg-slate-900 group-hover:text-white group-hover:border-slate-900 transition-all duration-500 group-hover:rotate-45">
+                                 <ArrowUpRight className="w-5 h-5" />
+                             </div>
+                        </div>
+                    </div>
+                </Link>
+            ))}
+         </div>
+      </div>
     </div>
   );
 };

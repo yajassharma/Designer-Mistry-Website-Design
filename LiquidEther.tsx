@@ -1,4 +1,5 @@
-import React, { useEffect, useRef } from 'react';
+
+import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 
 export interface LiquidEtherProps {
@@ -22,6 +23,59 @@ export interface LiquidEtherProps {
   autoResumeDelay?: number;
   autoRampDuration?: number;
 }
+
+// Lightweight CSS Animation Component for Mobile
+const MobileLiquidEther = ({ colors = ['#5227FF', '#FF9FFC', '#B19EEF'] }: { colors?: string[] }) => {
+  return (
+    <div className="absolute inset-0 overflow-hidden bg-slate-50">
+      {/* Static Gradient Mesh Background */}
+      <div 
+        className="absolute inset-0 opacity-40 blur-[80px] scale-150 animate-pulse"
+        style={{
+          background: `
+            radial-gradient(at 0% 0%, ${colors[0]} 0px, transparent 50%),
+            radial-gradient(at 100% 0%, ${colors[1]} 0px, transparent 50%),
+            radial-gradient(at 100% 100%, ${colors[2]} 0px, transparent 50%),
+            radial-gradient(at 0% 100%, ${colors[0]} 0px, transparent 50%)
+          `,
+          animationDuration: '8s'
+        }}
+      />
+      <div 
+         className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"
+         style={{ backgroundColor: colors[1] }}
+      />
+      <div 
+         className="absolute top-1/3 right-1/4 w-[400px] h-[400px] rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"
+         style={{ backgroundColor: colors[0] }}
+      />
+       <div 
+         className="absolute bottom-1/3 left-1/3 w-[600px] h-[600px] rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000"
+         style={{ backgroundColor: colors[2] }}
+      />
+      <style>{`
+        @keyframes blob {
+          0% { transform: translate(-50%, -50%) scale(1); }
+          33% { transform: translate(-30%, -60%) scale(1.1); }
+          66% { transform: translate(-60%, -20%) scale(0.9); }
+          100% { transform: translate(-50%, -50%) scale(1); }
+        }
+        .animate-blob {
+          animation: blob 10s infinite;
+        }
+        .animation-delay-2000 {
+          animation-delay: 2s;
+        }
+        .animation-delay-4000 {
+          animation-delay: 4s;
+        }
+      `}</style>
+    </div>
+  );
+};
+
+// ... (Rest of the WebGL Code for Desktop) ...
+// NOTE: I am keeping the original desktop WebGL code but wrapping it conditionally.
 
 interface SimOptions {
   iterations_poisson: number;
@@ -54,7 +108,31 @@ interface LiquidEtherWebGL {
 
 const defaultColors = ['#5227FF', '#FF9FFC', '#B19EEF'];
 
-export default function LiquidEther({
+export default function LiquidEther(props: LiquidEtherProps): React.ReactElement {
+  const [isMobile, setIsMobile] = useState(false);
+  
+  useEffect(() => {
+    // Check for mobile device or small screen
+    const checkMobile = () => {
+      const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const isSmallScreen = window.innerWidth < 768;
+      setIsMobile(isMobileDevice || isSmallScreen);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  if (isMobile) {
+    return <MobileLiquidEther colors={props.colors} />;
+  }
+
+  return <DesktopLiquidEther {...props} />;
+}
+
+// Renaming the original component to DesktopLiquidEther
+function DesktopLiquidEther({
   mouseForce = 20,
   cursorSize = 100,
   isViscous = false,
@@ -1014,16 +1092,23 @@ export default function LiquidEther({
         Mouse.init(props.$wrapper);
         Mouse.autoIntensity = props.autoIntensity;
         Mouse.takeoverDuration = props.takeoverDuration;
+        
+        // Safety: Ensure we handle potential early interaction callbacks
         Mouse.onInteract = () => {
           this.lastUserInteraction = performance.now();
-          if (this.autoDriver) this.autoDriver.forceStop();
+          // Check if autoDriver exists before accessing
+          if (this.autoDriver) {
+            this.autoDriver.forceStop();
+          }
         };
+
         this.autoDriver = new AutoDriver(Mouse, this as any, {
           enabled: props.autoDemo,
           speed: props.autoSpeed,
           resumeDelay: props.autoResumeDelay,
           rampDuration: props.autoRampDuration
         });
+        
         this.init();
         window.addEventListener('resize', this._resize);
         this._onVisibility = () => {
